@@ -3,7 +3,7 @@ import json
 import tipcc
 
 
-def user():
+def local_user():
     x = requests.get(
         f"https://api.tip.cc/api/v0/user",
         headers={
@@ -11,17 +11,13 @@ def user():
             "Authorization": f"Bearer {tipcc.get_token()}",
         },
     )
-    if x.status_code not in [200, 404, 401]:
-        return False, "Error in tip.cc api server"
-    if x.status_code == 404:
-        return False, (json.loads(x.content))["error"]
-    if x.status_code == 401:
+    if x.status_code not in [200]:
         return False, (json.loads(x.content))["error"]
 
-    return True, json.loads(x.content())
+    return True, json.loads(x.content)
 
 
-def connections():
+def local_connections():
     x = requests.get(
         f"https://api.tip.cc/api/v0/user/connections",
         headers={
@@ -29,18 +25,14 @@ def connections():
             "Authorization": f"Bearer {tipcc.get_token()}",
         },
     )
-    if x.status_code not in [200, 404, 401]:
-        return False, "Error in tip.cc api server"
-    if x.status_code == 404:
-        return False, (json.loads(x.content))["error"]
-    if x.status_code == 401:
+    if x.status_code not in [200]:
         return False, (json.loads(x.content))["error"]
 
-    return True, json.loads(x.content())
+    return True, json.loads(x.content)
 
 
 def parse_tip_message(message):
-    # reads a tip.cc tip message and returns the data. Does NOT check to see if the message was sent by the tip.cc bot
+    # reads a tip.cc tip message (string) and returns the data. Does NOT check to see if the message was sent by the tip.cc bot
 
     message = message.split(" ")[1:]
     userIdFrom = int(message[0].split("<@")[1].replace(">", ""))
@@ -55,19 +47,19 @@ def parse_tip_message(message):
     """
     async def get_last_message_by_author(message, authorid):
 
-    channel = message.channel
-    messages = []
+        channel = message.channel
+        messages = []
 
-    async for message in channel.history(limit=5):
-        messages.append(message)
+        async for message in channel.history(limit=5):
+            messages.append(message)
 
-    if messages:
-        for i in range(5):
-            last_message = messages[i]
-            if last_message.author.id == int(authorid):
-                return last_message
-    else:
-        return None
+        if messages:
+            for i in range(5):
+                last_message = messages[i]
+                if last_message.author.id == int(authorid):
+                    return last_message
+                else:
+                    return None
     """
 
     # then call the function after retrieving your tip data:
