@@ -1,9 +1,8 @@
-import requests
 import json
 
 class BalancesManager:
-    def __init__(self, token) -> None:
-        self.token = token
+    def __init__(self, client) -> None:
+        self.client = client
 
     def get_balances(self, currency=None):
         if not currency:
@@ -11,30 +10,18 @@ class BalancesManager:
         else:
             url = "https://api.tip.cc/api/v0/account/wallets/" + currency
 
-        x = requests.get(
-            url,
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.get(url)
         if x.status_code != 200:
             return False, x.status_code
         return True, x.content
 
 
     def get_transaction(self, id, simple=True, custom=[]):
-        x = requests.get(
-            f"https://api.tip.cc/api/v0/account/transactions/{id}",
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.get(f"https://api.tip.cc/api/v0/account/transactions/{id}")
         if x.status_code != 200:
             return False, x.status_code
 
-        data = json.loads(x.content())
+        data = json.loads(x.content)
         if not simple:
             return True, data
         x = {}
@@ -65,13 +52,7 @@ class BalancesManager:
         currency=None,
     ):
         if id != None:
-            x = requests.get(
-                f"https://api.tip.cc/api/v0/account/transactions/{id}",
-                headers={
-                    "accept": "application/json",
-                    "Authorization": f"Bearer {self.token}",
-                },
-            )
+            x = self.client.session.get(f"https://api.tip.cc/api/v0/account/transactions/{id}")
         else:
             url = f"https://api.tip.cc/api/v0/account/transactions?since={since}&until={until}&offset={offset}&limit={limit}"
             for i in range(len(types)):
@@ -79,13 +60,7 @@ class BalancesManager:
             url += f"&sort={sort}"
             if currency != None:
                 url += "&currency=" + currency
-            x = requests.get(
-                url,
-                headers={
-                    "accept": "application/json",
-                    "Authorization": f"Bearer {self.token}",
-                },
-            )
+            x = self.client.session.get(url)
         if x.status_code not in [200]:
             return False, (json.loads(x.content))["error"]
 
@@ -94,20 +69,15 @@ class BalancesManager:
 
     def tip(
         self, recipient, value, currency
-    ):  # does not work for whatever reason... 415 error (wrong media type)
-
+    ):
         data = {
             "service": "discord",
             "recipient": str(recipient),
             "amount": {"value": str(value), "currency": str(currency)},
         }
-        x = requests.post(
+        x = self.client.session.post(
             "https://api.tip.cc/api/v0/tips",
-            json=data,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
+            json=data
         )
 
         if x.status_code not in [200]:
