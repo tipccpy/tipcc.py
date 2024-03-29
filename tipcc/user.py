@@ -3,35 +3,20 @@
 import requests
 
 class User:
-    def __init__(self, token) -> None:
-        self.token = token
+    def __init__(self, client) -> None:
+        self.client = client
 
     def get_depo_address(self, currency):
-        x = requests.get(
-            f"https://api.tip.cc/api/v0/account/wallets/{currency}/addresses",
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.get(f"https://api.tip.cc/api/v0/account/wallets/{currency}/addresses")
         if x.status_code != 200:
             return False, x.status_code
         return True, x.content
 
 
     def validate_destination(self, address, currency, extra=None):
-        data = {"address": str(address)}
-        if extra != None:
-            data.update({"extra": extra})
-
-        x = requests.get(
-            f"https://api.tip.cc/api/v0/account/wallets/{currency}/destination_info",
-            data=data,
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        url = f"https://api.tip.cc/api/v0/account/wallets/{currency}/destination_info?address={address}&code={currency}"
+        url += f"&extra={extra}" if extra else ""
+        x = self.client.session.get(url)
         if x.status_code != 200:
             return False, x.status_code
         return True, x.content
@@ -51,14 +36,7 @@ class User:
         if extra != None:
             data.update({"extra": extra})
 
-        x = requests.get(
-            f"https://api.tip.cc/api/v0/account/wallets/{currency}/destination_info",
-            data=data,
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.get(f"https://api.tip.cc/api/v0/account/wallets/{currency}/withdrawal", data=data)
         if x.status_code != 200:
             return False, x.status_code
         return True, x.content
@@ -72,26 +50,14 @@ class User:
 
 
     def confirm_withdraw(self, currency, withdrawid):
-        x = requests.put(
-            f"https://api.tip.cc/api/v0/account/wallets/{currency}/withdrawal/{withdrawid}",
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.put(f"https://api.tip.cc/api/v0/account/wallets/{currency}/withdrawal/{withdrawid}")
         if x.status_code != 200:
             return False, x.status_code
         return True, x.content
 
 
     def cancel_withdraw(self, currency, withdrawid):
-        x = requests.delete(
-            f"https://api.tip.cc/api/v0/account/wallets/{currency}/withdrawal/{withdrawid}",
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.delete(f"https://api.tip.cc/api/v0/account/wallets/{currency}/withdrawal/{withdrawid}")
         if x.status_code != 200:
             return False, x.status_code
         return True, x.content

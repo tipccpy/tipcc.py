@@ -2,17 +2,11 @@ import requests
 import json
 
 class InfoManager:
-    def __init__(self, token) -> None:
-        self.token = token
+    def __init__(self, client) -> None:
+        self.client = client
 
     def local_user(self):
-        x = requests.get(
-            f"https://api.tip.cc/api/v0/user",
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.get("https://api.tip.cc/api/v0/user")
         if x.status_code not in [200]:
             return False, (json.loads(x.content))["error"]
 
@@ -20,13 +14,7 @@ class InfoManager:
 
 
     def local_connections(self):
-        x = requests.get(
-            f"https://api.tip.cc/api/v0/user/connections",
-            headers={
-                "accept": "application/json",
-                "Authorization": f"Bearer {self.token}",
-            },
-        )
+        x = self.client.session.get("https://api.tip.cc/api/v0/user/connections")
         if x.status_code not in [200]:
             return False, (json.loads(x.content))["error"]
 
