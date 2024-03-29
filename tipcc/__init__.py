@@ -1,4 +1,4 @@
-from .tipcc import *
+from .client import *
 from .balances import *
 from .currencies import *
 from .info import *
