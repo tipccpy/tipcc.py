@@ -100,9 +100,9 @@ def tip(
     }
     x = requests.post(
         "https://api.tip.cc/api/v0/tips",
-        data=data,
+        json=data,
         headers={
-            "accept": "application/json",
+            "Content-Type": "application/json",
             "Authorization": f"Bearer {tipcc.get_token()}",
         },
     )
