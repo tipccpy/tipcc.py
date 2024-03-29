@@ -1,8 +1,8 @@
-from .client import *
-from .balances import *
-from .currencies import *
-from .info import *
-from .user import *
+from .client import TipccClient
+from .balances import BalancesManager
+from .currencies import CurrenciesManager
+from .info import InfoManager
+from .user import User
 
 
 # stuff to work on:
