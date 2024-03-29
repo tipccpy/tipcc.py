@@ -1,128 +1,129 @@
 import requests
 import json
 
+class CurrenciesManager:
+    def __init__(self, token) -> None:
+        self.token = token
 
-def get_currencies(savefile=False):
-    x = requests.get(f"https://api.tip.cc/api/v0/currencies/cryptocurrencies")
-    if x.status_code != 200:
-        return False, x.status_code
+    def get_currencies(self, savefile=False):
+        x = requests.get(f"https://api.tip.cc/api/v0/currencies/cryptocurrencies")
+        if x.status_code != 200:
+            return False, x.status_code
 
-    if not savefile:
-        return True, json.loads(x.content)
-    with open(savefile, "w") as f:
-        f.write(json.dumps(x.content, indent=4))
-    return True, json.loads(x.content)
-
-
-def get_fiats(savefile=False):
-    x = requests.get(f"https://api.tip.cc/api/v0/currencies/fiats")
-    if x.status_code != 200:
-        return False, x.status_code
-
-    if not savefile:
-        return True, json.loads(x.content)
-    with open(savefile, "w") as f:
-        f.write(json.dumps(x.content, indent=4))
-    return True, json.loads(x.content)
-
-
-def get_all(savefile=False):
-    x = {}
-    fiats = requests.get(f"https://api.tip.cc/api/v0/currencies/fiats")
-    if fiats.status_code != 200:
-        return False, fiats.status_code
-
-    x.update(json.loads(fiats.content))
-
-    cryptos = requests.get(f"https://api.tip.cc/api/v0/currencies/cryptocurrencies")
-    if cryptos.status_code != 200:
-        return False, cryptos.status_code
-
-    x.update(json.loads(cryptos.content))
-
-    if not savefile:
-        return True, x
-    with open(savefile, "w") as f:
-        f.write(json.dumps(x, indent=4))
-    return True, x
-
-
-def get_rates(savefile=False, hideNull=False):
-    x = requests.get(f"https://api.tip.cc/api/v0/currencies/rates")
-    if x.status_code != 200:
-        return False, x.status_code
-
-    if not hideNull:
         if not savefile:
             return True, json.loads(x.content)
         with open(savefile, "w") as f:
-            f.write(json.dumps(json.loads(x.content), indent=4))
+            f.write(json.dumps(x.content, indent=4))
         return True, json.loads(x.content)
-    y = []
-    for i in json.loads(x.content)["rates"]:
-        if i["usd_value"] != None:
-            y.append(i)
-    if not savefile:
-        return True, json.loads({"rates": y})
-    with open(savefile, "w") as f:
-        f.write(json.dumps({"rates": y}, indent=4))
-    return True, {"rates": y}
 
 
-def get_price(token, file=None):
-    # only does token FULL NAME rn... gotta have it accept abreviations
-    token = token.lower()
+    def get_fiats(self, savefile=False):
+        x = requests.get(f"https://api.tip.cc/api/v0/currencies/fiats")
+        if x.status_code != 200:
+            return False, x.status_code
 
-    if file == None:
-        for i in json.loads(
-            requests.get("https://api.tip.cc/api/v0/currencies/rates").content
-        )["rates"]:
-            if i["code"].lower() == token:
-                if str(i["usd_value"]) != "null":
-                    return True, float(i["usd_value"]["value"]) / 10000
-    else:
-        with open(file) as f:
-            x = json.loads(f.read())
-        for i in x["rates"]:
-            if i["code"].lower() == token:
-                if str(i["usd_value"]) != "null":
-                    return True, float(i["usd_value"]["value"]) / 10000
-                else:
-                    return True, None  # return none if no value
-
-    return False
+        if not savefile:
+            return True, json.loads(x.content)
+        with open(savefile, "w") as f:
+            f.write(json.dumps(x.content, indent=4))
+        return True, json.loads(x.content)
 
 
-def conversions():
-    # returns list of conversions of coins (btc/sat, eth/wei)
-    x = get_currencies()
+    def get_all(self, savefile=False):
+        x = {}
+        fiats = requests.get(f"https://api.tip.cc/api/v0/currencies/fiats")
+        if fiats.status_code != 200:
+            return False, fiats.status_code
 
-    if x[0] != True:
+        x.update(json.loads(fiats.content))
+
+        cryptos = requests.get(f"https://api.tip.cc/api/v0/currencies/cryptocurrencies")
+        if cryptos.status_code != 200:
+            return False, cryptos.status_code
+
+        x.update(json.loads(cryptos.content))
+
+        if not savefile:
+            return True, x
+        with open(savefile, "w") as f:
+            f.write(json.dumps(x, indent=4))
+        return True, x
+
+
+    def get_rates(self, savefile=False, hideNull=False):
+        x = requests.get(f"https://api.tip.cc/api/v0/currencies/rates")
+        if x.status_code != 200:
+            return False, x.status_code
+
+        if not hideNull:
+            if not savefile:
+                return True, json.loads(x.content)
+            with open(savefile, "w") as f:
+                f.write(json.dumps(json.loads(x.content), indent=4))
+            return True, json.loads(x.content)
+        y = []
+        for i in json.loads(x.content)["rates"]:
+            if i["usd_value"] != None:
+                y.append(i)
+        if not savefile:
+            return True, json.loads({"rates": y})
+        with open(savefile, "w") as f:
+            f.write(json.dumps({"rates": y}, indent=4))
+        return True, {"rates": y}
+
+
+    def get_price(self, currency, file=None):
+        # only does token FULL NAME rn... gotta have it accept abreviations
+        currency = currency.lower()
+
+        if file == None:
+            for i in json.loads(
+                requests.get("https://api.tip.cc/api/v0/currencies/rates").content
+            )["rates"]:
+                if i["code"].lower() == currency:
+                    if str(i["usd_value"]) != "null":
+                        return True, float(i["usd_value"]["value"]) / 10000
+        else:
+            with open(file) as f:
+                x = json.loads(f.read())
+            for i in x["rates"]:
+                if i["code"].lower() == currency:
+                    if str(i["usd_value"]) != "null":
+                        return True, float(i["usd_value"]["value"]) / 10000
+                    else:
+                        return True, None  # return none if no value
+
         return False
 
-    x = x[1]["cryptocurrencies"]
 
-    data = {}
+    def conversions(self):
+        # returns list of conversions of coins (btc/sat, eth/wei)
+        x = self.get_currencies()
 
-    for i in x:
-        for y in i["format"]["units"]:
-            if y["singular"] != i["code"]:
-                scale = 1
-                for x in range(abs(y["scale"] - i["format"]["scale"])):
-                    scale = scale * 10
-                data.update(
-                    {y["singular"]: {"parent": i["code"], "conversion": 1 / scale}}
-                )
+        if x[0] != True:
+            return False
 
-    return data
+        x = x[1]["cryptocurrencies"]
 
+        data = {}
 
-def convert_factors(factor, value):
-    # returns the converted value of the factor into its parent currency
+        for i in x:
+            for y in i["format"]["units"]:
+                if y["singular"] != i["code"]:
+                    scale = 1
+                    for x in range(abs(y["scale"] - i["format"]["scale"])):
+                        scale = scale * 10
+                    data.update(
+                        {y["singular"]: {"parent": i["code"], "conversion": 1 / scale}}
+                    )
 
-    data = conversions()
+        return data
 
-    if factor not in data:
-        return False
+    def convert_factors(self, factor, value):
+        # returns the converted value of the factor into its parent currency
+        data = self.conversions()
 
-    return True, data[factor]["parent"], data[factor]["conversion"] * float(value)
+        if factor not in data:
+            return False
+
+        return True, data[factor]["parent"], data[factor]["conversion"] * float(value)
