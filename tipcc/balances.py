@@ -5,82 +5,93 @@ class BalancesManager:
         self.client = client
 
     def get_balances(self, currency=None):
-        if not currency:
-            url = "https://api.tip.cc/api/v0/account/wallets"
-        else:
-            url = "https://api.tip.cc/api/v0/account/wallets/" + currency
+        url = f"https://api.tip.cc/api/v0/account/wallets{('/' + currency) if currency else ''}"
+        response = self.client.session.get(url)
+        
+        if response.status_code != 200:
+            return False, response.status_code
+        
+        try:
+            return True, response.json()
+        except json.JSONDecodeError:
+            return False, "Invalid JSON response"
 
-        x = self.client.session.get(url)
-        if x.status_code != 200:
-            return False, x.status_code
-        return True, x.content
+    def get_transaction(self, transaction_id, simple=True, custom_fields=None):
+        if custom_fields is None:
+            custom_fields = []
+        
+        response = self.client.session.get(f"https://api.tip.cc/api/v0/account/transactions/{transaction_id}")
+        if response.status_code != 200:
+            return False, response.status_code
 
-
-    def get_transaction(self, id, simple=True, custom=[]):
-        x = self.client.session.get(f"https://api.tip.cc/api/v0/account/transactions/{id}")
-        if x.status_code != 200:
-            return False, x.status_code
-
-        data = json.loads(x.content)
+        try:
+            data = response.json()
+        except json.JSONDecodeError:
+            return False, "Invalid JSON response"
+        
         if not simple:
             return True, data
-        x = {}
-        if simple:
-            x.update({"id": data["transaction"]["id"]})
-            x.update({"type": data["transaction"]["type"]})
-            x.update({"amount": data["transaction"]["amount"]})
-            x.update({"usd_value": data["transaction"]["usd_value"]})
-            x.update({"sender": data["transaction"]["sender"]})
-            x.update({"recipient": data["transaction"]["recipient"]})
-        for i in custom:
-            try:
-                x.update({i: data["transaction"][i]})
-            except:
-                return False, f"{i} not found in json response"
-        return True, x
 
+        transaction_data = {
+            "id": data["transaction"].get("id"),
+            "type": data["transaction"].get("type"),
+            "amount": data["transaction"].get("amount"),
+            "usd_value": data["transaction"].get("usd_value"),
+            "sender": data["transaction"].get("sender"),
+            "recipient": data["transaction"].get("recipient"),
+        }
 
-    def get_transactions(
-        self,
-        id=None,
-        since="2001-01-01T00%3A00%3A00%2B00%3A00",
-        until="3001-01-01T00%3A00%3A00%2B00%3A00",
-        offset=0,
-        limit=100,
-        types=("tip", "deposit", "withdrawal"),
-        sort="desc",
-        currency=None,
-    ):
-        if id != None:
-            x = self.client.session.get(f"https://api.tip.cc/api/v0/account/transactions/{id}")
+        for field in custom_fields:
+            if field in data["transaction"]:
+                transaction_data[field] = data["transaction"][field]
+            else:
+                return False, f"{field} not found in JSON response"
+        
+        return True, transaction_data
+
+    def get_transactions(self, transaction_id=None, since="2001-01-01T00%3A00%3A00%2B00%3A00", 
+                         until="3001-01-01T00%3A00%3A00%2B00%3A00", offset=0, limit=100, 
+                         types=("tip", "deposit", "withdrawal"), sort="desc", currency=None):
+        
+        if transaction_id:
+            response = self.client.session.get(f"https://api.tip.cc/api/v0/account/transactions/{transaction_id}")
         else:
-            url = f"https://api.tip.cc/api/v0/account/transactions?since={since}&until={until}&offset={offset}&limit={limit}"
-            for i in range(len(types)):
-                url += "&types=" + types[i]
-            url += f"&sort={sort}"
-            if currency != None:
-                url += "&currency=" + currency
-            x = self.client.session.get(url)
-        if x.status_code not in [200]:
-            return False, (json.loads(x.content))["error"]
+            url = (f"https://api.tip.cc/api/v0/account/transactions?since={since}&until={until}" 
+                   f"&offset={offset}&limit={limit}&sort={sort}")
+            url += ''.join([f"&types={t}" for t in types])
+            if currency:
+                url += f"&currency={currency}"
+            
+            response = self.client.session.get(url)
 
-        return True, json.loads(x.content)
+        if response.status_code != 200:
+            try:
+                error_message = response.json().get("error", "Unknown error")
+            except json.JSONDecodeError:
+                error_message = "Invalid JSON response"
+            return False, error_message
+        
+        try:
+            return True, response.json()
+        except json.JSONDecodeError:
+            return False, "Invalid JSON response"
 
-
-    def tip(
-        self, recipient, value, currency
-    ):
+    def tip(self, recipient, value, currency):
         data = {
             "service": "discord",
             "recipient": str(recipient),
             "amount": {"value": str(value), "currency": str(currency)},
         }
-        x = self.client.session.post(
-            "https://api.tip.cc/api/v0/tips",
-            json=data
-        )
+        response = self.client.session.post("https://api.tip.cc/api/v0/tips", json=data)
 
-        if x.status_code not in [200]:
-            return False, (json.loads(x.content))["error"], x.status_code
-
-        return True, json.loads(x.content)
+        if response.status_code != 200:
+            try:
+                error_message = response.json().get("error", "Unknown error")
+            except json.JSONDecodeError:
+                error_message = "Invalid JSON response"
+            return False, error_message, response.status_code
+        
+        try:
+            return True, response.json()
+        except json.JSONDecodeError:
+            return False, "Invalid JSON response"
